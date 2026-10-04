@@ -1,5 +1,7 @@
 # SailingRoutes
 
+[![Build Status](https://github.com/wherrera10/SailingRoutes.jl/workflows/CI/badge.svg)](https://github.com/wherrera10/SailingRoutes.jl/actions)
+
 Weather routing for sailboats. Sailing path ocean navigation route calculations using Julia.
 
 ![Description](docs/src/sailingshiponroute.jpg)
