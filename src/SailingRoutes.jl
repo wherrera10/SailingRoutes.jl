@@ -59,6 +59,8 @@ const Knots = Float64
     Position(lat, lon)
 
 Represents a geographic position with latitude and longitude in degrees.
+The two-argument constructor converts real values to `Float64`; tuple and
+vector constructors accept `(latitude, longitude)` values in that order.
 """
 struct Position
     lat::Latitude
@@ -139,9 +141,23 @@ function Base.show(io::IO, sp::SurfaceParameters)
     )
 end
 
+"""
+    GridPosition
+
+A grid cell identified by its one-based `(row, column)` indices.
+The two-argument constructor converts integer indices to `Int`.
+"""
 const GridPosition = Tuple{Int, Int}
 @inline GridPosition(r::Integer, c::Integer) = (Int(r), Int(c))
 
+"""
+    GridPoint
+
+A geographic grid cell with its position and the wind and current conditions
+at that location. The six-argument constructor takes latitude, longitude,
+wind direction, wind speed, current direction, and current speed, in that order.
+Directions are in degrees and speeds are in knots.
+"""
 struct GridPoint
     pt::Position
     sp::SurfaceParameters
@@ -155,8 +171,19 @@ GridPoint(lat::Real, lon::Real, winddeg::Real, windkts::Real, currentdeg::Real, 
 
 Base.show(io::IO, gp::GridPoint) = print(io, "GridPoint($(gp.pt), $(gp.sp))")
 
+"""
+    TimeSlice
+
+A matrix of `GridPoint`s representing positions and conditions at one time.
+"""
 const TimeSlice = Matrix{GridPoint}
 
+"""
+    TimedPath(duration, path)
+
+A route with elapsed travel time in minutes and a vector of grid positions.
+The duration must be nonnegative and the path must contain at least one point.
+"""
 struct TimedPath
     duration::Float64
     path::Vector{GridPosition}
@@ -286,6 +313,13 @@ function interpolatepolar(polar::SailingPolar, windangle::Float64, windspeed::Fl
     return polar.interpolator(windangle, windspeed)
 end
 
+"""
+    boatspeed(polar, windangle, windspeed)
+
+Return the boat's speed in knots at the given wind angle and wind speed,
+using the polar's interpolated performance data. Values outside the polar's
+data ranges are clamped to the nearest boundary.
+"""
 @inline boatspeed(polar::SailingPolar, windangle::Float64, windspeed::Float64) =
     interpolatepolar(polar, windangle, windspeed)
 
@@ -409,6 +443,16 @@ function sailsegmenttime(polar::SailingPolar, p::SurfaceParameters, lat1, lon1, 
     return distance / (vel * KNOT) / SECONDS_PER_MINUTE
 end
 
+"""
+    RoutingProblem(timeinterval, timeframe, obstacleindices, start, finish)
+
+Describes a route-search problem on a time-varying grid. `timeinterval` is
+the duration in minutes represented by each time slice, `timeframe` is a
+nonempty vector of equally sized `TimeSlice`s, and `obstacleindices` marks
+blocked cells. `start` and `finish` are `(row, column)` grid positions.
+The constructor checks grid dimensions, bounds, and that the endpoints are
+not obstacles.
+"""
 mutable struct RoutingProblem
     timeinterval::Float64
     timeframe::Vector{TimeSlice}
@@ -470,7 +514,7 @@ function closestpoint(p::Position, mat::Matrix{GridPoint})
     mindist = Inf
     minidx = (1, 1)
 
-    for i in 1:size(mat, 1), j in 1:size(mat, 2)
+    for i in axes(mat, 1), j in axes(mat, 2)
         q = mat[i, j].pt
         dlat = p.lat - q.lat
         latmean = (p.lat + q.lat)/2
@@ -604,7 +648,9 @@ end
 """
     validateroutingproblem(rp)
 
-Validate that a RoutingProblem is well-formed and feasible.
+Validate that a `RoutingProblem` has consistent time-slice and obstacle
+dimensions, in-bounds endpoints, and unblocked start and finish cells.
+Returns `(true, message)` if valid, or `(false, explanation)` otherwise.
 """
 function validateroutingproblem(rp::RoutingProblem)
     isempty(rp.timeframe) && return false, "Timeframe is empty"
@@ -640,7 +686,13 @@ end
 """
     createroutingproblem(latgrid, longrid, windfunction, currentfunction, timesteps, obstacles, start, finish, timeinterval=10.0)
 
-Helper function to create a RoutingProblem from grid definitions.
+Create a `RoutingProblem` from latitude and longitude grid coordinates.
+`windfunction(lat, lon, timestep)` and `currentfunction(lat, lon, timestep)`
+must each return a `(direction, speed)` pair; directions are in degrees and
+speeds are in knots. The number of generated time slices is `timesteps`.
+`obstacles` is a Boolean grid, and `start` and `finish` are `(row, column)`
+indices. `timeinterval` gives the duration in minutes represented by each
+slice and defaults to 10 minutes.
 """
 function createroutingproblem(
     latgrid,
@@ -692,4 +744,5 @@ Returns:
 solveroutingproblem(sp::SailingPolar, rp::RoutingProblem; verbose = false) =
     minimumtimeroute(rp, sp; verbose = verbose)
 
+    
 end # module SailingRoutes
