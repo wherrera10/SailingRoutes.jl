@@ -14,7 +14,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
-        # Add future pages here, e.g., "API Reference" => "api.md"
+        "API Reference" => "api.md",
     ],
 )
 
