@@ -1,9 +1,9 @@
 using Documenter, SailingRoutes
 
-DocMeta.setdocmeta!(RxNav, :DocTestSetup, :(using SailingRoutes); recursive=true)
+DocMeta.setdocmeta!(SailingRoutes, :DocTestSetup, :(using SailingRoutes); recursive=true)
 
 makedocs(;
-    modules=[RxNav],
+    modules=[SailingRoutes],
     authors="William Herrera",
     sitename="SailingRoutes.jl Documentation",
     repo=Documenter.Remotes.GitHub("wherrera10", "SailingRoutes.jl"),
