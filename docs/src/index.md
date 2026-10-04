@@ -1,6 +1,6 @@
 # SailingRoutes.jl
 
-![Description](assets/sailingshiponroute.jpg)
+![Description](sailingshiponroute.jpg)
 
 Sailing ship weather routing in Julia.
 
